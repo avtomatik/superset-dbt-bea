@@ -1,0 +1,11 @@
+superset_dbt_bea:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: postgres
+      user: superset
+      password: superset
+      port: 5432
+      dbname: superset
+      schema: public

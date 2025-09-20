@@ -1,0 +1,16 @@
+name: "superset_dbt_bea"
+version: "1.0"
+config-version: 2
+
+profile: "superset_dbt_bea"
+
+model-paths: ["models"]
+
+models:
+  superset_dbt_bea:
+    staging:
+      +schema: staging
+      +materialized: view
+    marts:
+      +schema: marts
+      +materialized: table

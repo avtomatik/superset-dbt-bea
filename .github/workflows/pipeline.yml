@@ -1,0 +1,100 @@
+name: BEA Data Pipeline
+
+on:
+  schedule:
+    - cron: "0 3 * * *"   # Every day at 3AM UTC
+  workflow_dispatch:       # Manual trigger
+
+jobs:
+  run-pipeline:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:14
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: superset
+          POSTGRES_PASSWORD: superset
+          POSTGRES_DB: superset
+        options: >-
+          --health-cmd="pg_isready -U superset -d superset"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install sqlalchemy psycopg2-binary pandas requests dbt-postgres
+
+      - name: Run BEA ingestion
+        env:
+          BEA_API_KEY: ${{ secrets.BEA_API_KEY }}
+          DB_USER: superset
+          DB_PASS: superset
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: superset
+        run: |
+          python data_ingestion/bea_downloader.py
+
+      - name: Run dbt transformations
+        working-directory: dbt_project
+        env:
+          DBT_PROFILES_DIR: ${{ github.workspace }}/dbt_project
+        run: |
+          dbt deps
+          dbt run
+
+  export-dashboards:
+    runs-on: ubuntu-latest
+    needs: run-pipeline
+
+    services:
+      postgres:
+        image: postgres:14
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: superset
+          POSTGRES_PASSWORD: superset
+          POSTGRES_DB: superset
+      superset:
+        image: apache/superset:latest
+        ports:
+          - 8088:8088
+        env:
+          SUPERSET_SECRET_KEY: "superset_secret"
+          SUPERSET_LOAD_EXAMPLES: "no"
+          SUPERSET_DATABASE_URI: "postgresql+psycopg2://superset:superset@postgres:5432/superset"
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Wait for Superset
+        run: sleep 30
+
+      - name: Export dashboards
+        run: |
+          docker exec $(docker ps -q -f name=superset) superset export-dashboards -f /tmp/dashboards.json
+          docker cp $(docker ps -q -f name=superset):/tmp/dashboards.json superset/dashboards/dashboards.json
+
+      - name: Commit dashboards
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add superset/dashboards/
+          git commit -m "chore: update Superset dashboards [skip ci]" || echo "No changes"
+          git push

@@ -1,0 +1,21 @@
+version: 2
+
+sources:
+  - name: bea
+    schema: public
+    tables:
+      - name: gdp
+        description: "Raw GDP by Industry data from BEA API (CSV ingestion)"
+
+models:
+  - name: stg_bea_gdp
+    description: "Cleaned staging model for BEA GDP data"
+    columns:
+      - name: region
+        description: "Geographic name (e.g., United States, region)"
+      - name: industry
+        description: "Industry sector"
+      - name: gdp_value
+        description: "Value added by industry (millions USD)"
+      - name: year
+        description: "Year of observation"
