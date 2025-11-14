@@ -12,11 +12,13 @@ BASE_URL = "https://apps.bea.gov/api/data/"
 # Postgres connection (from docker-compose.yml)
 DB_USER = os.getenv("DB_USER", "superset")
 DB_PASS = os.getenv("DB_PASS", "superset")
-DB_HOST = os.getenv("DB_HOST", "localhost")  # use "postgres" if running inside Docker
+# use "postgres" if running inside Docker
+DB_HOST = os.getenv("DB_HOST", "localhost")
 DB_PORT = os.getenv("DB_PORT", "5432")
 DB_NAME = os.getenv("DB_NAME", "superset")
 
 CONNECTION_STRING = f"postgresql+psycopg2://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+
 
 def fetch_gdp_data(year_start=2015, year_end=2023, frequency="A"):
     """
@@ -29,6 +31,7 @@ def fetch_gdp_data(year_start=2015, year_end=2023, frequency="A"):
         "TableID": "6",  # Example: Value Added by Industry
         "Year": f"{year_start},{year_end}",
         "Frequency": frequency,
+        "Industry": "ALL",
         "ResultFormat": "json",
     }
 
