@@ -20,7 +20,7 @@ DB_NAME = os.getenv("DB_NAME", "superset")
 CONNECTION_STRING = f"postgresql+psycopg2://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
 
-def fetch_gdp_data(year_start=2015, year_end=2023, frequency="A"):
+def fetch_gdp_data(year_start=2015, year_end=2024, frequency="A"):
     """
     Fetch GDP by Industry data from BEA API.
     """
@@ -44,7 +44,7 @@ def fetch_gdp_data(year_start=2015, year_end=2023, frequency="A"):
     data = resp.json()
 
     try:
-        records = data["BEAAPI"]["Results"]["Data"]
+        records = data["BEAAPI"]["Results"][0]["Data"]
     except KeyError:
         raise Exception(f"❌ Unexpected response format: {data}")
 
