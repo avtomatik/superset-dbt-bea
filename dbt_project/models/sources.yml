@@ -1,0 +1,12 @@
+version: 2
+sources:
+  - name: bea
+    description: "Source data from BEA (Bureau of Economic Analysis)"
+    tables:
+      - name: gdp
+        description: "GDP data from BEA"
+        columns:
+          - name: year
+            description: "Year of GDP data"
+          - name: gdp
+            description: "Gross Domestic Product value"
