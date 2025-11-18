@@ -1,25 +1,21 @@
-with
-    base
-    as
-    (
-
-        select *
-        from {{ ref
-    ('stg_bea_gdp') }}
-
+WITH base AS (
+    SELECT
+        *
+    FROM
+        { { ref ('stg_bea_gdp') } }
 ),
-
-agg as
-(
-
-    select
-    year,
-    industry,
-    sum(gdp_value) as gdp_total
-from base
-group by year, industry
-
+agg AS (
+    SELECT
+        year,
+        industry,
+        sum(gdp_value) AS gdp_total
+    FROM
+        base
+    GROUP BY
+        year,
+        industry
 )
-
-select *
-from agg
+SELECT
+    *
+FROM
+    agg

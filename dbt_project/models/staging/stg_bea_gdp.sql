@@ -1,18 +1,15 @@
-with
-    raw
-    as
-    (
-
-        select
-            "GeoName" as region,
-            "Industry" as industry,
-            cast(nullif("DataValue", '') as numeric) as gdp_value,
-            "TimePeriod"::int as year
-        from {{ source
-    ('bea', 'gdp') }}
-
+WITH raw AS (
+    SELECT
+        "GeoName" AS region,
+        "Industry" AS industry,
+        cast(nullif("DataValue", '') AS numeric) AS gdp_value,
+        "TimePeriod" :: int AS year
+    FROM
+        { { source ('bea', 'gdp') } }
 )
-
-select *
-from raw
-where gdp_value is not null
+SELECT
+    *
+FROM
+    raw
+WHERE
+    gdp_value IS NOT NULL
