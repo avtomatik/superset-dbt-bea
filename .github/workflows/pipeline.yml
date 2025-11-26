@@ -37,16 +37,33 @@ jobs:
         run: |
           pip install -r requirements.txt --no-cache-dir
 
+      - name: Wait for PostgreSQL to be ready
+        run: |
+          until pg_isready -h localhost -p 5432 -U superset; do
+            echo "Waiting for PostgreSQL to be ready..."
+            sleep 5
+          done
+
+      - name: Check PostgreSQL container logs
+        run: |
+          docker ps
+          docker logs $(docker ps -q -f name=postgres)
+
       - name: Run BEA ingestion
         env:
           BEA_API_KEY: ${{ secrets.BEA_API_KEY }}
           DB_USER: superset
           DB_PASS: superset
-          DB_HOST: localhost
+          DB_HOST: localhost   # Ensure DBT is using the correct DB_HOST
           DB_PORT: 5432
           DB_NAME: superset
         run: |
           python data_ingestion/bea_downloader.py
+
+      - name: Echo PostgreSQL connection status
+        run: |
+          echo "Trying to connect to PostgreSQL..."
+          pg_isready -h localhost -p 5432 -U superset
 
       - name: Run dbt transformations
         working-directory: dbt_project
