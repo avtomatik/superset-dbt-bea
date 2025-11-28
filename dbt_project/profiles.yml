@@ -3,7 +3,7 @@ superset_dbt_bea:
   outputs:
     dev:
       type: postgres
-      host: postgres
+      host: localhost   # Change from 'postgres' to 'localhost'
       user: superset
       password: superset
       port: 5432
