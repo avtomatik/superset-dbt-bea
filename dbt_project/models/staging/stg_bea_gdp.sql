@@ -5,7 +5,7 @@ WITH raw AS (
         cast(nullif("DataValue", '') AS numeric) AS gdp_value,
         "TimePeriod" :: int AS year
     FROM
-        { { source ('bea', 'gdp') } }
+        {{ source ('bea', 'gdp') }}
 )
 SELECT
     *

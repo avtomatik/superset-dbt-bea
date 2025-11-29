@@ -2,7 +2,7 @@ WITH base AS (
     SELECT
         *
     FROM
-        { { ref ('stg_bea_gdp') } }
+        {{ ref ('stg_bea_gdp') }}
 ),
 agg AS (
     SELECT
