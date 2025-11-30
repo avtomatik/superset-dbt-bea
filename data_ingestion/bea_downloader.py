@@ -1,6 +1,7 @@
-import requests
-import pandas as pd
 import os
+
+import pandas as pd
+import requests
 from sqlalchemy import create_engine
 
 # 🔑 BEA API Key (https://apps.bea.gov/api/signup/)
@@ -17,7 +18,9 @@ DB_HOST = os.getenv("DB_HOST", "localhost")
 DB_PORT = os.getenv("DB_PORT", "5432")
 DB_NAME = os.getenv("DB_NAME", "superset")
 
-CONNECTION_STRING = f"postgresql+psycopg2://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+CONNECTION_STRING = (
+    f"postgresql+psycopg2://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+)
 
 
 def fetch_gdp_data(year_start=2015, year_end=2024, frequency="A"):
@@ -55,20 +58,26 @@ def fetch_gdp_data(year_start=2015, year_end=2024, frequency="A"):
 
 def save_to_postgres(df, table_name="gdp"):
     """
-    Save DataFrame directly into Postgres.
+    Save DataFrame into Postgres under the 'bea' schema
+    so it matches the dbt source configuration.
     """
     engine = create_engine(CONNECTION_STRING)
 
-    # Ensure schema matches dbt source
+    with engine.connect() as conn:
+        conn.execute("CREATE SCHEMA IF NOT EXISTS bea;")
+        conn.commit()
+
     df.to_sql(
         table_name,
-        engine,
-        if_exists="replace",  # replace table each run
+        con=engine,
+        schema="bea",
+        if_exists="replace",
         index=False,
         chunksize=1000,
         method="multi",
     )
-    print(f"✅ Saved BEA data to Postgres table: {table_name}")
+
+    print(f"✅ Saved BEA data to Postgres table: bea.{table_name}")
 
 
 if __name__ == "__main__":
