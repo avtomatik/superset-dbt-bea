@@ -63,9 +63,8 @@ def save_to_postgres(df, table_name="gdp"):
     """
     engine = create_engine(CONNECTION_STRING)
 
-    with engine.connect() as conn:
-        conn.execute("CREATE SCHEMA IF NOT EXISTS bea;")
-        conn.commit()
+    with engine.begin() as conn:
+        conn.exec_driver_sql("CREATE SCHEMA IF NOT EXISTS bea;")
 
     df.to_sql(
         table_name,
