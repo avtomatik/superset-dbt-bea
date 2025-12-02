@@ -52,6 +52,7 @@ def fetch_gdp_data(year_start=2015, year_end=2024, frequency="A"):
         raise Exception(f"❌ Unexpected response format: {data}")
 
     df = pd.DataFrame(records)
+    df["GeoName"] = "United States"
     print(f"✅ Fetched {len(df)} records from BEA API.")
     return df
 
