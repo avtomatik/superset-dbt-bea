@@ -1,9 +1,9 @@
 WITH raw AS (
     SELECT
         "GeoName" AS region,
-        "Industry" AS industry,
+        "IndustrYDescription" AS industry,
         cast(nullif("DataValue", '') AS numeric) AS gdp_value,
-        "TimePeriod" :: int AS year
+        "Year" :: int AS year
     FROM
         {{ source ('bea', 'gdp') }}
 )
