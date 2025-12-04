@@ -1,5 +1,6 @@
 dbt-postgres>=1.9
 pandas>=2.3
 psycopg2-binary>=2.9
+pydantic-settings>=2.12.0
 requests>=2.32
 sqlalchemy>=2.0
