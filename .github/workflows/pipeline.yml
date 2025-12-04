@@ -94,19 +94,47 @@ jobs:
           SUPERSET_SECRET_KEY: "superset_secret"
           SUPERSET_LOAD_EXAMPLES: "no"
           SUPERSET_DATABASE_URI: "postgresql+psycopg2://superset:superset@postgres:5432/superset"
+        # volumes:
+        #   - superset_data:/var/lib/postgresql/data
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Wait for Superset
-        run: sleep 30
+      # Ensure Superset is fully initialized
+      - name: Wait for PostgreSQL
+        run: |
+          until pg_isready -h localhost -p 5432 -U superset; do
+            echo "Waiting for PostgreSQL to be ready..."
+            sleep 10
+          done
 
+      # Initialize the Superset Database (if not already initialized)
+      - name: Initialize Superset database
+        run: |
+          docker exec -t $(docker ps -q -f name=superset) superset db upgrade
+
+      # Create Admin User (if Superset is freshly initialized)
+      - name: Create Superset Admin User
+        run: |
+          docker exec -t $(docker ps -q -f name=superset) superset fab create-admin \
+            --username admin \
+            --firstname Admin \
+            --lastname User \
+            --email admin@superset.com \
+            --password admin
+
+      # Wait for Superset to fully initialize
+      - name: Wait for Superset
+        run: sleep 60  # Adjust time if necessary
+
+      # Export dashboards
       - name: Export dashboards
         run: |
           docker exec $(docker ps -q -f name=superset) superset export-dashboards -f /tmp/dashboards.json
           docker cp $(docker ps -q -f name=superset):/tmp/dashboards.json superset/dashboards/dashboards.json
 
+      # Commit dashboards
       - name: Commit dashboards
         run: |
           git config user.name "github-actions"
