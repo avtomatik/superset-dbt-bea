@@ -2,9 +2,8 @@ from http import HTTPStatus
 
 import pandas as pd
 import requests
+from config import settings
 from sqlalchemy import create_engine
-
-from .config import settings
 
 
 def fetch_gdp_data(year_start=2015, year_end=2024, frequency="A"):
