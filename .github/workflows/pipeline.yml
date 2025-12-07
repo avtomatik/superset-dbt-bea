@@ -1,8 +1,11 @@
 name: BEA Data Pipeline
 
+permissions:
+  contents: write
+
 on:
   schedule:
-    - cron: "0 3 * * *"   # Every day at 3AM UTC
+    - cron: "0 3 * * MON"
   workflow_dispatch:       # Manual trigger
 
 jobs:
@@ -134,6 +137,10 @@ jobs:
           docker exec $(docker ps -q -f name=superset) superset export-dashboards -f /tmp/dashboards.json
           docker cp $(docker ps -q -f name=superset):/tmp/dashboards.json superset/dashboards/dashboards.json
 
+      # Debug: If Token exists
+      - name: Check if Token exists
+        run: echo "Token exists? ${{ secrets.GITHUB_TOKEN != '' }}"
+
       # Commit dashboards
       - name: Commit dashboards
         run: |
@@ -141,4 +148,4 @@ jobs:
           git config user.email "github-actions@github.com"
           git add superset/dashboards/
           git commit -m "chore: update Superset dashboards [skip ci]" || echo "No changes"
-          git push
+          git push https://github-actions:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git HEAD:${{ github.ref }}
