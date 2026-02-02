@@ -5,8 +5,9 @@ permissions:
 
 on:
   schedule:
-    - cron: "0 3 * * MON"
-  workflow_dispatch:       # Manual trigger
+    # Every Monday in Feb, May, Aug, Nov at 03:00 UTC
+    - cron: "0 3 * 2,5,8,11 1"
+  workflow_dispatch:
 
 jobs:
   run-pipeline:
@@ -28,6 +29,19 @@ jobs:
           --health-retries=5
 
     steps:
+      # Guard: only allow first Monday
+      - name: Exit unless first Monday of target month
+        run: |
+          DAY_OF_MONTH=$(date +%d)
+          DAY_OF_WEEK=$(date +%u) # 1 = Monday
+
+          if [ "$DAY_OF_WEEK" -ne 1 ] || [ "$DAY_OF_MONTH" -gt 7 ]; then
+            echo "Not the first Monday of the month. Exiting."
+            exit 78
+          fi
+
+          echo "First Monday confirmed. Continuing pipeline"
+
       - name: Checkout repo
         uses: actions/checkout@v4
 
@@ -44,7 +58,7 @@ jobs:
         run: |
           until pg_isready -h localhost -p 5432 -U superset; do
             echo "Waiting for PostgreSQL to be ready..."
-            sleep 10  # Increase waiting time
+            sleep 10
           done
 
       - name: Check PostgreSQL container logs
@@ -57,7 +71,7 @@ jobs:
           BEA_API_KEY: ${{ secrets.BEA_API_KEY }}
           DB_USER: superset
           DB_PASS: superset
-          DB_HOST: localhost   # Change DB_HOST to localhost
+          DB_HOST: localhost
           DB_PORT: 5432
           DB_NAME: superset
         run: |
@@ -89,6 +103,7 @@ jobs:
           POSTGRES_USER: superset
           POSTGRES_PASSWORD: superset
           POSTGRES_DB: superset
+
       superset:
         image: apache/superset:latest
         ports:
@@ -97,14 +112,11 @@ jobs:
           SUPERSET_SECRET_KEY: "superset_secret"
           SUPERSET_LOAD_EXAMPLES: "no"
           SUPERSET_DATABASE_URI: "postgresql+psycopg2://superset:superset@postgres:5432/superset"
-        # volumes:
-        #   - superset_data:/var/lib/postgresql/data
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      # Ensure Superset is fully initialized
       - name: Wait for PostgreSQL
         run: |
           until pg_isready -h localhost -p 5432 -U superset; do
@@ -112,12 +124,10 @@ jobs:
             sleep 10
           done
 
-      # Initialize the Superset Database (if not already initialized)
       - name: Initialize Superset database
         run: |
           docker exec -t $(docker ps -q -f name=superset) superset db upgrade
 
-      # Create Admin User (if Superset is freshly initialized)
       - name: Create Superset Admin User
         run: |
           docker exec -t $(docker ps -q -f name=superset) superset fab create-admin \
@@ -127,21 +137,15 @@ jobs:
             --email admin@superset.com \
             --password admin
 
-      # Wait for Superset to fully initialize
       - name: Wait for Superset
-        run: sleep 60  # Adjust time if necessary
+        run: sleep 60
 
-      # Export dashboards
       - name: Export dashboards
         run: |
           docker exec $(docker ps -q -f name=superset) superset export-dashboards -f /tmp/dashboards.json
           docker cp $(docker ps -q -f name=superset):/tmp/dashboards.json superset/dashboards/dashboards.json
 
-      # Debug: If Token exists
-      - name: Check if Token exists
-        run: echo "Token exists? ${{ secrets.GITHUB_TOKEN != '' }}"
 
-      # Commit dashboards
       - name: Commit dashboards
         run: |
           git config user.name "github-actions"
